@@ -1,0 +1,56 @@
+version: "2.4"
+
+services:
+    mongodb:
+        hostname: mongodb
+        image: mongo:${MONGODB_VERSION}
+        volumes:
+            - mongodb:/data/db
+        ports:
+            - 27017:27017
+        networks:
+            - graylog
+
+    elasticsearch:
+        hostname: elasticsearch
+        image: docker.elastic.co/elasticsearch/elasticsearch-oss:${ELASTICSEARCH_VERSION}
+        volumes:
+            - elasticsearch:/usr/share/elasticsearch/data
+        ports:
+            - 9200:9200
+        environment:
+            - bootstrap.memory_lock=true
+            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+            - discovery.type=single-node
+        networks:
+            - graylog
+
+    graylog:
+        image: graylog/graylog:${GRAYLOG_VERSION}
+        volumes:
+            - graylog:/usr/share/graylog/data/journal
+        ports:
+            - 9000:9000
+            - 10514:10514/udp
+        environment:
+            # pwgen -snc 96 1
+            - GRAYLOG_PASSWORD_SECRET=48z4803C14eqRyAINA0ObFL1lAtOsuW0emgCtOCTELbCPxlvG67wROa4cAZEYMZC8blNLsJZupGxC6xuRjfgkXPwim5pW1Lh
+            # echo -n <password> | sha256sum
+            - GRAYLOG_ROOT_PASSWORD_SHA2=8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918 # admin
+            - GRAYLOG_MONGODB_URI=mongodb://mongodb:27017/graylog
+            - GRAYLOG_ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+            - GRAYLOG_HTTP_EXTERNAL_URI=http://localhost:9000/
+        networks:
+            - graylog
+        depends_on:
+            - mongodb
+            - elasticsearch
+        entrypoint: /usr/bin/tini -- wait-for-it elasticsearch:9200 -- /docker-entrypoint.sh
+
+volumes:
+    elasticsearch:
+    graylog:
+    mongodb:
+
+networks:
+    graylog:
