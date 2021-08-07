@@ -16,12 +16,14 @@ services:
         image: docker.elastic.co/elasticsearch/elasticsearch-oss:${ELASTICSEARCH_VERSION}
         volumes:
             - elasticsearch:/usr/share/elasticsearch/data
+            - elasticsearch_backup:/backup
         ports:
             - 9200:9200
         environment:
             - bootstrap.memory_lock=true
             - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
             - discovery.type=single-node
+            - path.repo: "['/backup']"
         networks:
             - graylog
 
@@ -49,6 +51,7 @@ services:
 
 volumes:
     elasticsearch:
+    elasticsearch_backup:
     graylog:
     mongodb:
 
